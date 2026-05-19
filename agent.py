@@ -4,26 +4,25 @@ import pickle
 from fourier_basis import FourierBasis
 from config import LEARNING_RATE, GAMMA, LAM, ORDER, START_EPSILON, FINAL_EPSILON, EPSILON_DECAY
 
-_BONUS_CENTER        = 200.0   # aterragem entre bandeiras (|x| ≤ 0.15): +200 extra
-_PENALTY_FAR         = 150.0   # aterragem fora das bandeiras (|x| > 0.15): -150 extra
-_PENALTY_FIRE_LANDED = 1.5     # disparar propulsor com ambas as pernas no chão: -1.5/passo
+_BONUS_CENTER = 200.0   # aterragem entre bandeiras (|x| ≤ 0.15): +200 extra
+_PENALTY_FAR  = 150.0   # aterragem fora das bandeiras (|x| > 0.15): -150 extra
 
 
-def _shape_reward(reward, obs, action, terminated):
-    left_leg  = float(obs[6])
-    right_leg = float(obs[7])
-    both_legs = left_leg > 0.5 and right_leg > 0.5
-
-    # Penalização leve por disparar motores após pouso (só passos não-terminais)
-    if not terminated and both_legs and action != 0:
-        reward -= _PENALTY_FIRE_LANDED
-
-    if terminated and both_legs:
-        x_pos = float(obs[0])
-        if abs(x_pos) <= 0.15:
-            reward += _BONUS_CENTER    # entre as bandeiras
-        else:
-            reward -= _PENALTY_FAR    # fora das bandeiras
+def _shape_reward(reward, obs, terminated):
+    """
+    Shaping apenas terminal.
+    Avaliação feita quando terminated=True — momento em que o Box2D
+    marca o lander como completamente parado, não apenas quando toca.
+    """
+    if terminated:
+        left_leg  = float(obs[6])
+        right_leg = float(obs[7])
+        if left_leg > 0.5 and right_leg > 0.5:   # aterragem suave (não crash)
+            x_pos = float(obs[0])
+            if abs(x_pos) <= 0.15:
+                reward += _BONUS_CENTER
+            else:
+                reward -= _PENALTY_FAR
     return reward
 
 
@@ -63,6 +62,9 @@ class SarsaLambdaAgent:
         return np.dot(self.weights, features), features
 
     def choose_action(self, state):
+        # Bloqueia propulsores quando ambas as pernas estão no chão
+        if state[6] > 0.5 and state[7] > 0.5:
+            return 0
         q_values, _ = self.get_q(state)
         if np.random.rand() < self.epsilon:
             return self.env.action_space.sample()
@@ -79,7 +81,7 @@ class SarsaLambdaAgent:
             next_obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
 
-            reward = _shape_reward(reward, next_obs, action, terminated)
+            reward = _shape_reward(reward, next_obs, terminated)
             episode_reward += reward
 
             next_action               = self.choose_action(next_obs)
