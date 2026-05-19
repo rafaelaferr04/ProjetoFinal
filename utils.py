@@ -3,12 +3,6 @@ import matplotlib.pyplot as plt
 
 
 def plot_rewards(env, agent, path, rolling_length=50):
-    """
-    Gráfico de treino — 3 painéis, igual ao tutorial Blackjack:
-      - Recompensas por episódio
-      - Duração dos episódios
-      - Erro TD de treino
-    """
     fig, axs = plt.subplots(ncols=3, figsize=(12, 5))
 
     axs[0].set_title("Recompensas por episódio")
@@ -46,5 +40,5 @@ def plot_rewards(env, agent, path, rolling_length=50):
 
     plt.tight_layout()
     plt.savefig(path)
-    plt.close('all')   # fecha sem bloquear o terminal
+    plt.close('all')
     print(f"Gráfico guardado em {path}")

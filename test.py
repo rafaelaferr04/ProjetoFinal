@@ -8,7 +8,7 @@ def test(render=True, num_episodes=10):
     env = gym.make(ENV_NAME, render_mode="human" if render else None)
 
     agent = SarsaLambdaAgent(env, order=ORDER)
-    agent.load(MODEL_PATH)   # epsilon fica 0.0 após load
+    agent.load(MODEL_PATH)
 
     rewards = []
 
