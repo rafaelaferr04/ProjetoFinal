@@ -11,10 +11,13 @@ if __name__ == "__main__":
         print("Usa:")
         print("  python main.py train")
         print("  python main.py test")
+
     elif sys.argv[1] == "train":
         env, agent = train()
         plot_rewards(env, agent, PLOT_PATH)
+
     elif sys.argv[1] == "test":
         test(render=True, num_episodes=10)
+
     else:
         print("Argumento desconhecido.")

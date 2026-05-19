@@ -16,5 +16,5 @@ class FourierBasis:
         ).T.reshape(-1, state_dim)
 
     def get_features(self, state):
-        # state deve estar normalizado para [0, 1]
+        # state deve estar normalizado para [0, 1]  (igual ao notebook)
         return np.cos(np.pi * np.dot(self.c, state))
