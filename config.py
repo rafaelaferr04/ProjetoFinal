@@ -1,14 +1,17 @@
 ENV_NAME = "LunarLander-v3"
 
-NUM_EPISODES = 1000
-MAX_STEPS = 1000
+N_EPISODES = 8000
+MAX_STEPS  = 1000
 
-GAMMA = 0.99
-LEARNING_RATE = 0.0003
-CLIP_EPSILON = 0.2
-PPO_EPOCHS = 4
+# SARSA(λ) com base de Fourier e traces substitutivas
+LEARNING_RATE = 0.001
+GAMMA = 0.995   # menos desconto por passo: valoriza mais a recompensa final
+LAM   = 0.5
+ORDER = 2
 
-HIDDEN_SIZE = 128
+START_EPSILON = 1.0
+EPSILON_DECAY = START_EPSILON / (N_EPISODES * 0.80)
+FINAL_EPSILON = 0.01
 
-MODEL_PATH = "ppo_lunar_lander_model.pth"
-PLOT_PATH = "rewards_plot_lunar_lander_ppo.png"
+MODEL_PATH = "sarsa_lambda_lunar_lander.pkl"
+PLOT_PATH  = "rewards_plot_lunar_lander.png"

@@ -1,60 +1,25 @@
+import numpy as np
 import gymnasium as gym
+from tqdm import tqdm
 
-from ppo_agent import PPOAgent
-from config import *
+from agent import SarsaLambdaAgent
+from config import ENV_NAME, N_EPISODES, ORDER, MODEL_PATH
 
 
 def train():
     env = gym.make(ENV_NAME)
-
-    num_states = env.observation_space.shape[0]
-    num_actions = env.action_space.n
-
-    agent = PPOAgent(
-        num_states=num_states,
-        num_actions=num_actions,
-        gamma=GAMMA,
-        learning_rate=LEARNING_RATE,
-        clip_epsilon=CLIP_EPSILON,
-        ppo_epochs=PPO_EPOCHS,
-        hidden_size=HIDDEN_SIZE
-    )
-
-    rewards_each_episode = []
-
-    for episode in range(NUM_EPISODES):
-        state, info = env.reset()
-        episodic_reward = 0
-
-        for step in range(MAX_STEPS):
-            action, log_prob, value = agent.choose_action(state)
-
-            next_state, reward, terminated, truncated, info = env.step(action)
-            done = terminated or truncated
-
-            agent.buffer.states.append(state)
-            agent.buffer.values.append(value)
-            agent.buffer.actions.append(action)
-            agent.buffer.rewards.append(reward)
-            agent.buffer.dones.append(done)
-            agent.buffer.log_probs.append(log_prob)
-
-            episodic_reward += reward
-            state = next_state
-
-            if done:
-                break
-
-        agent.update()
-
-        rewards_each_episode.append(episodic_reward)
-
-        print(
-            f"Episódio {episode + 1}/{NUM_EPISODES} "
-            f"Reward: {episodic_reward:.2f}"
-        )
-
+    env = gym.wrappers.RecordEpisodeStatistics(env, buffer_length=N_EPISODES)
+    agent = SarsaLambdaAgent(env, order=ORDER)
+    print(f"SARSA(λ) traces substitutivas — {agent.num_features} features por ação")
+    print(f"α={agent.alpha}, γ={agent.gamma}, λ={agent.lam}, episódios={N_EPISODES}")
+    for episode in tqdm(range(N_EPISODES)):
+        obs, _ = env.reset()
+        agent.train_episode(obs)
+        agent.decay_epsilon()
+        if (episode + 1) % 500 == 0:
+            recent = list(env.return_queue)[-100:]
+            avg = np.mean(recent) if recent else 0.0
+            tqdm.write(f"  ep {episode+1:5d} | média 100: {avg:8.2f} | ε={agent.epsilon:.3f} | |w|={np.abs(agent.weights).max():.1f}")
     agent.save(MODEL_PATH)
     env.close()
-
-    return rewards_each_episode
+    return env, agent
