@@ -4,29 +4,43 @@ import pickle
 from fourier_basis import FourierBasis
 from config import LEARNING_RATE, GAMMA, LAM, ORDER, START_EPSILON, FINAL_EPSILON, EPSILON_DECAY
 
-_BONUS_CENTER = 200.0   # aterragem entre bandeiras (|x| ≤ 0.15): +200 extra
-_PENALTY_FAR  = 150.0   # aterragem fora das bandeiras (|x| > 0.15): -150 extra
+# Desconto por tempo
+_STEP_PENALTY = 0.1        # -0.1 por passo
+
+# Avaliação no primeiro toque (ambas as pernas)
+_TOUCH_BONUS      = 100.0  # toque dentro das bandeiras
+_TOUCH_PENALTY    = 80.0   # penalização máx fora (proporcional à distância)
+
+# Avaliação final (lander completamente parado, terminated=True)
+_FINAL_BONUS      = 150.0  # parou dentro das bandeiras
+_FINAL_PENALTY    = 120.0  # parou fora das bandeiras
 
 
-def _shape_reward(reward, obs, terminated):
-    """
-    Shaping apenas terminal.
-    Avaliação feita quando terminated=True — momento em que o Box2D
-    marca o lander como completamente parado, não apenas quando toca.
-    """
-    if terminated:
-        left_leg  = float(obs[6])
-        right_leg = float(obs[7])
-        if left_leg > 0.5 and right_leg > 0.5:   # aterragem suave (não crash)
-            x_pos = float(obs[0])
-            if abs(x_pos) <= 0.15:
-                reward += _BONUS_CENTER
-            else:
-                reward -= _PENALTY_FAR
-    return reward
+def _touchdown_reward(obs):
+    """Bónus/penalização no momento em que ambas as pernas tocam pela primeira vez."""
+    x_pos = float(obs[0])
+    if abs(x_pos) <= 0.15:
+        return _TOUCH_BONUS
+    else:
+        dist_frac = min(1.0, (abs(x_pos) - 0.15) / 0.85)
+        return -_TOUCH_PENALTY * dist_frac
+
+
+def _final_reward(obs):
+    """Bónus/penalização quando o lander para completamente (terminated=True)."""
+    left_leg  = float(obs[6])
+    right_leg = float(obs[7])
+    if left_leg > 0.5 and right_leg > 0.5:
+        x_pos = float(obs[0])
+        if abs(x_pos) <= 0.15:
+            return _FINAL_BONUS
+        else:
+            return -_FINAL_PENALTY
+    return 0.0
 
 
 class SarsaLambdaAgent:
+
     def __init__(self, env, order=ORDER):
         self.env         = env
         self.state_dim   = env.observation_space.shape[0]
@@ -75,13 +89,25 @@ class SarsaLambdaAgent:
         q_values, features = self.get_q(obs)
         e = np.zeros((self.num_actions, self.num_features))
         episode_reward = 0.0
-        done = False
+        done   = False
+        landed = False
 
         while not done:
             next_obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
 
-            reward = _shape_reward(reward, next_obs, terminated)
+            # Desconto por tempo — penaliza episódios longos
+            reward -= _STEP_PENALTY
+
+            # 1ª avaliação: primeiro toque com ambas as pernas
+            if not landed and next_obs[6] > 0.5 and next_obs[7] > 0.5:
+                landed = True
+                reward += _touchdown_reward(next_obs)
+
+            # 2ª avaliação: posição final após qualquer deslize (lander parado)
+            if terminated:
+                reward += _final_reward(next_obs)
+
             episode_reward += reward
 
             next_action               = self.choose_action(next_obs)
