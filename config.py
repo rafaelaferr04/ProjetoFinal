@@ -1,6 +1,11 @@
 ENV_NAME = "LunarLander-v3"
 
-N_EPISODES = 7000
+# Gravidade da Lua na convenção do env (constante física, não varia).
+# O env aceita o parâmetro `gravity` em gym.make — passamos este valor
+# explicitamente para deixar claro que estamos a simular a Lua e não a Terra.
+MOON_GRAVITY = -10.0
+
+N_EPISODES = 3000
 MAX_STEPS  = 1000
 
 # Aproximação linear + features densas (base de Fourier completa) → mantemos
@@ -25,12 +30,12 @@ FLAG_HALF_WIDTH = 0.2
 # Estabilidade numérica.
 DELTA_CLIP   = 10.0
 WEIGHTS_CLIP = 50.0
-WEIGHT_DECAY = 1e-5   # leve regularização L2 por step
+WEIGHT_DECAY = 1e-5
 
 MODEL_PATH      = "sarsa_lambda_lunar_lander.pkl"
 BEST_MODEL_PATH = "sarsa_lambda_lunar_lander_best.pkl"
 PLOT_PATH       = "rewards_plot_lunar_lander.png"
 
-# Frequência de avaliação determinística (e gravação do melhor) durante treino.
-EVAL_EVERY     = 250
-EVAL_EPISODES  = 30
+# Avaliação determinística periódica durante o treino (grava o melhor modelo).
+EVAL_EVERY    = 250
+EVAL_EPISODES = 30

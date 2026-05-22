@@ -4,7 +4,8 @@ import gymnasium as gym
 
 from agent import SarsaLambdaAgent
 from config import (
-    ENV_NAME, MAX_STEPS, ORDER, MODEL_PATH, BEST_MODEL_PATH, FLAG_HALF_WIDTH,
+    ENV_NAME, MOON_GRAVITY, MAX_STEPS, ORDER, MODEL_PATH, BEST_MODEL_PATH,
+    FLAG_HALF_WIDTH,
 )
 
 
@@ -13,13 +14,16 @@ def _landed_in_centre(obs):
 
 
 def test(render=True, num_episodes=10):
-    env = gym.make(ENV_NAME, render_mode="human" if render else None)
+    env = gym.make(
+        ENV_NAME,
+        render_mode="human" if render else None,
+        gravity=MOON_GRAVITY,
+    )
 
     agent = SarsaLambdaAgent(env, order=ORDER)
-    # Preferir o melhor modelo guardado durante o treino; cair para o último se
-    # não existir.
+    # Preferir o melhor modelo guardado; cair para o último se não existir.
     path = BEST_MODEL_PATH if os.path.exists(BEST_MODEL_PATH) else MODEL_PATH
-    print(f"A carregar modelo: {path}")
+    print(f"A carregar modelo: {path}  |  gravidade={MOON_GRAVITY} (Lua)")
     agent.load(path)
 
     rewards = []

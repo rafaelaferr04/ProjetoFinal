@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from agent import SarsaLambdaAgent
 from config import (
-    ENV_NAME, N_EPISODES, ORDER, MODEL_PATH, BEST_MODEL_PATH,
+    ENV_NAME, MOON_GRAVITY, N_EPISODES, ORDER, MODEL_PATH, BEST_MODEL_PATH,
     FLAG_HALF_WIDTH, EVAL_EVERY, EVAL_EPISODES,
 )
 
@@ -46,9 +46,9 @@ def _evaluate(env, agent, num_episodes):
 
 
 def train():
-    env      = gym.make(ENV_NAME)
+    env      = gym.make(ENV_NAME, gravity=MOON_GRAVITY)
     env      = gym.wrappers.RecordEpisodeStatistics(env, buffer_length=N_EPISODES)
-    eval_env = gym.make(ENV_NAME)
+    eval_env = gym.make(ENV_NAME, gravity=MOON_GRAVITY)
 
     agent = SarsaLambdaAgent(env, order=ORDER)
 
@@ -58,7 +58,7 @@ def train():
     )
     print(
         f"α={agent.alpha}, γ={agent.gamma}, λ={agent.lam}, "
-        f"episódios={N_EPISODES}"
+        f"episódios={N_EPISODES}, gravidade={MOON_GRAVITY} (Lua)"
     )
 
     best_centre  = -1
@@ -83,8 +83,6 @@ def train():
                 f" | |w|_max={np.abs(agent.weights).max():.2f}"
             )
 
-            # Guarda o melhor modelo visto até agora (por taxa de aterragens
-            # centrais; desempates por recompensa média na avaliação).
             score = (centre, mean_r)
             if best_weights is None or score > (best_centre, best_mean_r):
                 best_centre   = centre
