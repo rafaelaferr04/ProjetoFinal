@@ -1,6 +1,5 @@
-torch==2.12.0
-torchvision==0.27.0
-torchaudio==2.11.0
-gymnasium[box2d]==1.3.0
-matplotlib==3.10.9
-swig==4.4.1
+Para este projeto de agentes autónomos, que consiste em criar uma satélite
+que aterra na lua, utilizámos os seguinte pacotes e bibliotecas:
+gymnasium[box2d]
+numpy
+matplotlib
