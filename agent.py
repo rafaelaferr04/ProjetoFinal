@@ -1,45 +1,23 @@
 """
-Agente híbrido para LunarLander-v3.
-
-Arquitectura (slides "Arquiteturas de Agentes II"): combina uma camada reativa
-com uma camada deliberativa.
+Arquitectura: combina uma camada reativa com uma camada deliberativa.
 
   Camada reativa
-    O pilot heurístico (pilot.py) é um controlador PID-style que mapeia
-    perceção directamente em ação. Sozinho aterra ~47% das vezes entre as
-    bandeiras com recompensa média ~+230. Funciona como política base
+    O pilot heurístico (pilot.py) é um controlador que mapeia
+    perceção directamente em ação. Funciona como política base
     estável e segura.
 
   Camada deliberativa
-    SARSA(λ) com aproximação linear sobre base de Fourier (slides
-    "Aprendizagem por Reforço") aprende uma função Q(s,a). Não tenta
-    aprender a política do zero — em vez disso, aprende a identificar
+    SARSA(λ) com aproximação linear sobre base de Fourier  aprende uma função Q(s,a).
+    Não tenta aprender a política do zero — em vez disso, aprende a identificar
     situações em que vale a pena divergir do pilot.
 
-  Política do agente (em exploitation, treino e teste)
-    Hibridização por confiança:
+  Política do agente (em exploitation, treino e teste):
         a_pilot  = pilot(s)
         a_q      = argmax_a Q(s, a)
         se Q(s, a_q) − Q(s, a_pilot) > δ_override: usar a_q
-        senão                                   : usar a_pilot
+        senão    : usar a_pilot
     Isto garante que o agente nunca é pior do que o pilot e só substitui
-    quando aprendeu que existe uma acção claramente melhor. SARSA(λ) é
-    on-policy e portanto consistente com esta política de comportamento.
-
-Porquê SARSA(λ) e não Q-learning:
-    Aproximação de função linear + bootstrapping + traces formam parte da
-    "deadly triad". Q-learning (off-policy) é vulnerável; SARSA(λ)
-    (on-policy) é seguro porque o alvo TD é avaliado segundo a própria
-    política de comportamento.
-
-Reward shaping:
-    Potential-based shaping F = γΦ(s') − Φ(s), com
-        Φ(s) = −1.5|x| − 0.5|θ| − 0.3|vy| − 0.2|ω|
-    É invariante de política (Ng et al., 1999) — não introduz óptimos
-    espúrios, apenas propaga sinal mais depressa. Inclui |vy| e |ω| para
-    empurrar para descidas suaves e sem rodopios.
-    Sinais terminais pequenos (+50 / −20) só atribuídos a aterragem suave
-    real (duas pernas + velocidades baixas + direito).
+    quando aprendeu que existe uma acção claramente melhor.
 """
 
 import numpy as np
@@ -58,10 +36,7 @@ from config import (
 _BONUS_LANDED_CENTRE = 50.0
 _PENALTY_LANDED_OFF  = 20.0
 
-# Margem mínima em valor-Q para a camada deliberativa sobrepor a sugestão do
-# pilot. Afinado empiricamente: margem ~10 dá ~90% de aterragens centrais
-# (margens menores fazem o Q substituir com pouca confiança, margens muito
-# grandes anulam o overrider e o agente colapsa para o pilot puro com ~47%).
+# Margem mínima em valor-Q para a camada deliberativa sobrepor a sugestão do pilot.
 _OVERRIDE_MARGIN = 10.0
 
 
@@ -79,7 +54,7 @@ def _terminal_reward(obs, terminated, truncated):
         if abs(obs[0]) <= FLAG_HALF_WIDTH:
             return +_BONUS_LANDED_CENTRE
         return -_PENALTY_LANDED_OFF
-    return 0.0  # env já dá −100 em crash; não acumulamos.
+    return 0.0 
 
 
 def _potential(obs):
@@ -118,8 +93,6 @@ class SarsaLambdaAgent:
         self.pilot_prob       = PILOT_GUIDED_PROB
         self.override_margin  = _OVERRIDE_MARGIN
 
-        # Konidaris et al. (2011): α por feature escalonado pela norma do
-        # vetor de coeficientes de Fourier.
         norms = np.maximum(1.0, np.linalg.norm(self.basis.c, axis=1))
         self.alpha_vec = self.alpha / norms
 
@@ -134,7 +107,7 @@ class SarsaLambdaAgent:
         return np.dot(self.weights, features), features
 
     def _exploit_action(self, state, q_values):
-        """Política de exploitation: pilot + Q como overrider confiante."""
+        """Política de exploitation: pilot + Q como overrider"""
         a_pilot = pilot_action(state)
         a_q     = int(np.argmax(q_values))
         if a_q == a_pilot:
@@ -168,7 +141,7 @@ class SarsaLambdaAgent:
             next_obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
 
-            # Potential-based shaping (invariante de política).
+            # Potential-based shaping.
             next_phi = _potential(next_obs)
             reward  += self.gamma * next_phi - prev_phi
             prev_phi = next_phi
@@ -194,7 +167,7 @@ class SarsaLambdaAgent:
             e        *= self.gamma * self.lam
             e[action] = features
 
-            # Update + leve weight decay (estabilidade).
+            # Update + leve weight decay para estabilidade.
             self.weights *= (1.0 - self.alpha * WEIGHT_DECAY)
             self.weights += self.alpha_vec * delta * e
             np.clip(self.weights, -WEIGHTS_CLIP, WEIGHTS_CLIP, out=self.weights)

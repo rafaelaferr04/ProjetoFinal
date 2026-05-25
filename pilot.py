@@ -1,16 +1,14 @@
 """
 Pilot heurístico (camada reativa).
 
-Controlador PID simples que sabe aterrar o módulo lunar razoavelmente entre as
+Controlador simples que sabe aterrar o módulo lunar razoavelmente entre as
 bandeiras sem aprendizagem. Inspirado no controlador de referência incluído no
 ambiente Box2D do Gymnasium.
 
-É usado de duas formas:
+É usado:
   1. Para guiar a exploração do agente durante o treino (em vez de ações
      uniformemente aleatórias), acelerando muito a convergência.
   2. Como fallback opcional quando a política aprendida ainda é fraca.
-
-Não tem estado interno nem aprendizagem.
 """
 
 import numpy as np

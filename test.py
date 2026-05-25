@@ -21,7 +21,7 @@ def test(render=True, num_episodes=10):
     )
 
     agent = SarsaLambdaAgent(env, order=ORDER)
-    # Preferir o melhor modelo guardado; cair para o último se não existir.
+    # Preferir o melhor modelo guardado- usar o último se não existir.
     path = BEST_MODEL_PATH if os.path.exists(BEST_MODEL_PATH) else MODEL_PATH
     print(f"A carregar modelo: {path}  |  gravidade={MOON_GRAVITY} (Lua)")
     agent.load(path)
